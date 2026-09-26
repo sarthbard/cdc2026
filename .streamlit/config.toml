@@ -1,0 +1,16 @@
+# Theme is pinned to light so the validated chart palette in src/theme.py
+# always renders against the surface it was checked against (#fcfcfb).
+# If you add a dark variant, add the dark hues to theme.py first.
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f9f9f7"
+secondaryBackgroundColor = "#fcfcfb"
+textColor = "#0b0b0b"
+font = "sans serif"
+
+[server]
+maxUploadSize = 1024
+
+[browser]
+gatherUsageStats = false

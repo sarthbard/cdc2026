@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data (the CFPB extract is ~1 GB — never commit it)
+data/
+*.db
+*.db-wal
+*.db-shm
+*.csv.zip
