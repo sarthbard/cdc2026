@@ -14,6 +14,9 @@ import argparse
 import io
 import sys
 import zipfile
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Iterator
 
 import pandas as pd
 
@@ -84,6 +87,51 @@ def normalize(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk
 
 
+@contextmanager
+def csv_source(source) -> Iterator[object]:
+    """Open a CSV path, including a CSV nested inside a ZIP archive."""
+    if not isinstance(source, (str, Path)):
+        yield source
+        return
+
+    path = Path(source)
+    if path.exists() and path.suffix.lower() != ".zip":
+        yield path
+        return
+
+    source_text = str(source)
+    zip_marker = source_text.lower().find(".zip")
+    if zip_marker >= 0:
+        archive_path = Path(source_text[: zip_marker + 4])
+        member_name = source_text[zip_marker + 4:].lstrip("\\/")
+    else:
+        archive_path = path
+        member_name = ""
+
+    if not archive_path.exists() or archive_path.suffix.lower() != ".zip":
+        raise FileNotFoundError(f"CSV or ZIP archive not found: {source}")
+
+    with zipfile.ZipFile(archive_path) as archive:
+        csv_members = [name for name in archive.namelist() if name.lower().endswith(".csv")]
+        if member_name:
+            member = next(
+                (name for name in csv_members if name.replace("/", "\\") == member_name.replace("/", "\\")),
+                None,
+            )
+            if member is None:
+                raise FileNotFoundError(
+                    f"CSV member {member_name!r} was not found in {archive_path}"
+                )
+        elif len(csv_members) == 1:
+            member = csv_members[0]
+        else:
+            raise ValueError(
+                f"ZIP archive contains multiple CSV files; specify one after .zip: {source}"
+            )
+        with archive.open(member) as handle:
+            yield handle
+
+
 def load_csv(source, limit: int | None = None) -> int:
     """Stream a CSV into SQLite in chunks. Returns the number of rows written."""
     DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -94,26 +142,27 @@ def load_csv(source, limit: int | None = None) -> int:
     create_table(conn)
 
     written = 0
-    reader = pd.read_csv(
-        source,
-        chunksize=CHUNK_SIZE,
-        dtype=str,
-        keep_default_na=False,
-        na_values=[""],
-        on_bad_lines="warn",
-    )
-    for i, chunk in enumerate(reader, start=1):
-        if limit is not None and written >= limit:
-            break
-        if limit is not None:
-            chunk = chunk.head(limit - written)
-        frame = normalize(chunk)
-        # method="multi" batches rows into one INSERT; SQLite caps a statement
-        # at 999 bound variables on older builds, so size the batch by columns.
-        frame.to_sql(TABLE, conn, if_exists="append", index=False, method="multi",
-                     chunksize=max(1, 900 // len(frame.columns)))
-        written += len(frame)
-        print(f"  chunk {i}: {written:,} rows", flush=True)
+    with csv_source(source) as opened_source:
+        reader = pd.read_csv(
+            opened_source,
+            chunksize=CHUNK_SIZE,
+            dtype=str,
+            keep_default_na=False,
+            na_values=[""],
+            on_bad_lines="warn",
+        )
+        for i, chunk in enumerate(reader, start=1):
+            if limit is not None and written >= limit:
+                break
+            if limit is not None:
+                chunk = chunk.head(limit - written)
+            frame = normalize(chunk)
+            # method="multi" batches rows into one INSERT; SQLite caps a statement
+            # at 999 bound variables on older builds, so size the batch by columns.
+            frame.to_sql(TABLE, conn, if_exists="append", index=False, method="multi",
+                         chunksize=max(1, 900 // len(frame.columns)))
+            written += len(frame)
+            print(f"  chunk {i}: {written:,} rows", flush=True)
 
     conn.commit()
     print("  building indexes…", flush=True)
