@@ -61,8 +61,6 @@ if db.db_exists():
 - **Explorer** — filter down to a slice and read the raw complaint rows.
 - **Trends** — how a dimension moves over time, and how outcomes differ across
   companies and products.
-- **SQL Lab** — write SQL against the database directly, chart the result,
-  download it.
 """
         )
     with right:
