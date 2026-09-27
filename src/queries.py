@@ -188,9 +188,7 @@ def dataset_summary() -> dict:
                MAX(date_received)              AS last_date,
                COUNT(DISTINCT company)         AS companies,
                COUNT(DISTINCT product)         AS products,
-               COUNT(DISTINCT state)           AS states,
-               SUM(CASE WHEN narrative IS NOT NULL AND narrative != '' THEN 1 ELSE 0 END)
-                                               AS with_narrative
+               COUNT(DISTINCT state)           AS states
         FROM {TABLE}
         """
     )
