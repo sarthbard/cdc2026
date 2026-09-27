@@ -20,11 +20,13 @@ Then swap in the real data when you're ready:
 ```bash
 python -m src.ingest --download                      # ~1 GB zip from the CFPB
 python -m src.ingest --csv data/raw/complaints.csv   # a CSV you already have
+python -m src.ingest --csv "CDC_2026_data.zip\CDC 2026\cleaned_complaints.csv"
 python -m src.ingest --csv data/raw/complaints.csv --limit 500000   # a slice
 ```
 
 `--download` caches the zip in `data/raw/` so a rerun doesn't re-fetch it.
-Ingest **drops and rebuilds** `data/complaints.db` each time.
+`--csv` also accepts a CSV nested inside a ZIP archive. Ingest **drops and
+rebuilds** `data/complaints.db` each time.
 
 ## Layout
 
