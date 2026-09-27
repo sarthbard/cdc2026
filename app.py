@@ -38,11 +38,6 @@ if db.db_exists():
             ("Complaints", f"{int(summary.get('rows', 0)):,}", "rows loaded"),
             ("Companies", f"{int(summary.get('companies', 0)):,}", "named in the data"),
             ("Products", f"{int(summary.get('products', 0)):,}", "top-level categories"),
-            (
-                "With a narrative",
-                f"{int(summary.get('with_narrative', 0)):,}",
-                "free-text consumer stories",
-            ),
         ]
     )
     st.caption(
