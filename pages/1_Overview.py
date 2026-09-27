@@ -19,16 +19,12 @@ if total == 0:
     st.info("No complaints match these filters.")
     st.stop()
 
-timely = queries.rate(f, "timely_response", "Yes")
-disputed = queries.rate(f, "consumer_disputed", "Yes")
 relief = queries.rate(f, "company_response", "Closed with monetary relief")
 
 ui.stat_tiles(
     [
         ("Complaints", f"{total:,}", "matching the current filters"),
-        ("Timely response", f"{timely:.1%}", "company replied on time"),
         ("Monetary relief", f"{relief:.1%}", "closed with money back"),
-        ("Consumer disputed", f"{disputed:.1%}", "of complaints with a dispute flag"),
     ]
 )
 
